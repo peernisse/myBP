@@ -1,0 +1,11 @@
+name: mybp
+title:
+username:
+account: peernisse
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 7266782
+bundleId: 6389500
+url: https://peernisse.shinyapps.io/mybp/
+when: 1665445656.58636
+lastSyncTime: 1665445656.58636

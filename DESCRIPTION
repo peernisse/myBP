@@ -13,10 +13,12 @@ Imports:
     DT,
     ggplot2,
     golem (>= 0.3.3.9007),
+    htmltools,
     magrittr,
     shiny (>= 1.6.0),
     shinyMobile,
-    tidyr
+    tidyr,
+    utils
 Suggests: 
     spelling,
     testthat (>= 3.0.0)

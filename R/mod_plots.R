@@ -32,7 +32,10 @@ mod_plots_ui <- function(id){
       )#end tagList
     ),#end f7Card
 
-    DT::DTOutput(ns('editView'))#end DTOutput
+    shinyMobile::f7Card(id = ns('cdTable'), title = 'Data Table',
+      DT::DTOutput(ns('editView'))#end DTOutput
+    )#end card
+
 
   )#end tagList
 }#end mod_plots_ui
@@ -54,7 +57,7 @@ mod_plots_server <- function(id,data){
     output$editView <- renderDT(
 
       dtStyle1(session,
-        df = LOCAL$bp_dataset %>%
+        df = LOCAL$bpd %>%
         dplyr::mutate(DATE = as.Date(DATE)) %>%
         dplyr::arrange(desc(DATE))
 
@@ -68,7 +71,7 @@ mod_plots_server <- function(id,data){
 
     output$plot <- renderPlot({
 
-        LOCAL$bp_dataset %>%
+        LOCAL$bpd %>%
           tidyr::pivot_longer(2:6,names_to = 'Metric', values_to = 'Value', values_drop_na = TRUE) %>%
           dplyr::filter(DATE >= (Sys.Date() - as.numeric(input$dtRange)), Metric %in% input$cbParams) %>%
           ggplot(.,aes(DATE,Value,color = Metric)) +

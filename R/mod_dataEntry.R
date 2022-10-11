@@ -17,16 +17,20 @@ mod_dataEntry_ui <- function(id){
   ns <- NS(id)
   tagList(
 
-    shinyMobile::f7DatePicker(ns('date'),label = 'Date'),
-    shinyMobile::f7Select(ns('sys'), label = 'Systolic', choices = seq(1:300), selected = 100),
-    shinyMobile::f7Select(ns('dias'), label = 'Diastolic', choices = seq(1:300), selected = 70),
-    shinyMobile::f7Select(ns('wt'), label = 'Weight (lbs)', choices = seq(1:300), selected = 170),
-    shinyMobile::f7Select(ns('ex'), label = 'Exercise (minutes)', choices = seq(1:300), selected = 0),
-    shinyMobile::f7Select(ns('meds'), label = 'Lisinopril (mg)', choices = c(0,5,10,20), selected = 0),
-    shinyMobile::f7Button(ns("commit"), label = 'Save')
+    shinyMobile::f7Card(id = ns('cdEntry'), title = 'Data Entry',
 
+                      shinyMobile::f7DatePicker(ns('date'),label = 'Date'),
+                      shinyMobile::f7Select(ns('sys'), label = 'Systolic', choices = seq(1:300), selected = 100),
+                      shinyMobile::f7Select(ns('dias'), label = 'Diastolic', choices = seq(1:300), selected = 70),
+                      shinyMobile::f7Select(ns('wt'), label = 'Weight (lbs)', choices = seq(1:300), selected = 170),
+                      shinyMobile::f7Select(ns('ex'), label = 'Exercise (minutes)', choices = seq(1:300), selected = 0),
+                      shinyMobile::f7Select(ns('meds'), label = 'Lisinopril (mg)', choices = c(0,5,10,20), selected = 0),
+                      footer = tagList(
+                        shinyMobile::f7Button(ns("commit"), label = 'Save')
+                      )#end footer
 
-  )
+    )#end card
+  )#end tagList
 }
 
 #' dataEntry Server Functions
@@ -39,11 +43,11 @@ mod_dataEntry_server <- function(id){
     ns <- session$ns
     #####SETUP DATA#####
     #Read current dataset in
-    load('./data/bp_dataset.rda')
+    #bpd <- readRDS('./data/bpd.RDS')
 
     #Instantiate reactive dataframe to add to
     LOCAL <- reactiveValues(
-      bp_dataset = bp_dataset %>% mutate(DATE = as.Date(DATE)),#Load existing data to reactive
+      bpd = readRDS('./inst/app/file_bpd.Rds'),#Load existing data to reactive
       newRecord = data.frame('DATE' = NA, 'SYS' = '', 'DIAS' = '', 'WT' = '',
                              'EXERCISE' = '', 'MEDS' = '', stringsAsFactors = FALSE)
     )
@@ -58,13 +62,13 @@ mod_dataEntry_server <- function(id){
       LOCAL$newRecord$EXERCISE <- as.numeric(input$ex)
       LOCAL$newRecord$MEDS <- as.numeric(input$meds)
 
-      LOCAL$bp_dataset <- dplyr::bind_rows(LOCAL$bp_dataset, LOCAL$newRecord)
+      LOCAL$bpd <- dplyr::bind_rows(LOCAL$bpd, LOCAL$newRecord)
 
       LOCAL$newRecord <- LOCAL$newRecord[0,]
 
-      bp_dataset <- LOCAL$bp_dataset
+      file.remove('./inst/app/file_bpd.RDS')
 
-      save(bp_dataset,file = './data/bp_dataset.rda')
+      LOCAL$bpd %>% as.data.frame(.) %>% saveRDS(.,file = './inst/app/file_bpd.Rds', version =2)
 
 
     })#end observeEvent
@@ -83,3 +87,5 @@ mod_dataEntry_server <- function(id){
 
 ## To be copied in the server
 # mod_dataEntry_server("dataEntry_1")
+
+

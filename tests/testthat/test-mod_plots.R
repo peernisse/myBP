@@ -1,7 +1,7 @@
 testServer(
   mod_plots_server,
   # Add here your module params
-  args = list()
+  args = list(data = list(A = 1, B = 2))
   , {
     ns <- session$ns
     expect_true(
@@ -13,6 +13,9 @@ testServer(
     expect_true(
       grepl("test", ns("test"))
     )
+
+    expect_equal(LOCAL$A, data$A)
+
     # Here are some examples of tests you can
     # run on your module
     # - Testing the setting of inputs
@@ -25,7 +28,7 @@ testServer(
     # - Testing output
     # expect_true(inherits(output$tbl$html, "html"))
 })
- 
+
 test_that("module ui works", {
   ui <- mod_plots_ui(id = "test")
   golem::expect_shinytaglist(ui)
@@ -35,4 +38,4 @@ test_that("module ui works", {
     expect_true(i %in% names(fmls))
   }
 })
- 
+

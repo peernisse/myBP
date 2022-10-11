@@ -2,14 +2,14 @@
 #'
 #' @param request Internal parameter for `{shiny}`.
 #'     DO NOT REMOVE.
-#' @import shiny shinyMobile
+#' @import shiny shinyMobile htmltools
 #' @noRd
 app_ui <- function(request) {
   tagList(
     # Leave this function for adding external resources
     golem_add_external_resources(),
     # Your application UI logic
-    f7Page(
+    f7Page(allowPWA = TRUE,
       f7SingleLayout(navbar = f7Navbar(title = 'Blood Pressure Data'),
 
                      mod_dataEntry_ui("dataEntry"),
