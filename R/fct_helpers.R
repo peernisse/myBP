@@ -17,22 +17,30 @@ dtStyle1 <- function(session,df,edit = TRUE, filter = 'none', dom = 't',scrollY 
 }#end function dtStyle1
 
 
-#' Persistent dataset to hold blood pressure related data.
+#' getData
 #'
-#'  \itemize{
-#'    \item DATE Date column for record
-#'    \item SYS numeric Systolic bp value
-#'    \item DIAS numeric Diastolic bp value
-#'    \item WT numeric Body weight that day in pounds
-#'    \item EX numeric Minutes of exercise in last 24 hours
-#'    \item MDX numeric Blood pressure medicine dosage taken that day in milligrams
-#'  }
+#' @description Retrieves data tables from SQLite file
 #'
-#' @docType data
-#' @keywords datasets
-#' @name bpd
-#'
-#' @format Data frame
+#' @return list of dataframes
 #'
 #'
-NULL
+#' @noRd
+getData <- function(session){
+
+    ns <- session$ns
+    #Database connection
+    conn <- DBI::dbConnect(RSQLite::SQLite(), "./inst/app/bp-db.sqlite")
+
+    #List tables
+    tbls <- dbListTables(conn)
+
+    #Get Data
+    bpd <- DBI::dbGetQuery(conn, 'SELECT * FROM bpd;')
+    users <- DBI::dbGetQuery(conn, 'SELECT * FROM users;')
+
+    DBI::dbDisconnect(conn)
+
+    return(list(bpd = bpd, users = users))
+
+}#end getData
+

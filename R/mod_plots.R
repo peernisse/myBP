@@ -9,7 +9,7 @@
 #' @importFrom shiny NS tagList
 #' @importFrom DT datatable renderDT DTOutput
 #' @importFrom magrittr %>%
-#' @importFrom dplyr arrange filter mutate
+#' @importFrom dplyr arrange filter mutate group_by summarize
 #' @importFrom tidyr pivot_longer
 #'
 mod_plots_ui <- function(id){
@@ -17,17 +17,20 @@ mod_plots_ui <- function(id){
   tagList(
 
     f7Card(id = ns('plotCard'),title = 'BP Time Series',
+
       plotOutput(ns('plot')),#end plotOutput
+
       footer = tagList(
-        f7Select(ns('dtRange'),
-                        label = 'Date Range',
-                        choices = c('7','14','21','30', '60','90'),
-                        selected = c('14')
-        ),#end f7CheckboxGroup
         f7CheckboxGroup(ns('cbParams'),
                         label = 'Metrics',
                         choices = c('SYS','DIAS','WT','EXERCISE','MEDS'),
                         selected = 'SYS'
+        ),#end f7CheckboxGroup
+
+        f7Select(ns('dtRange'),
+                        label = 'Days Back',
+                        choices = c('7','14','21','30', '60','90', '180', '365', '730', '1000', '2000'),
+                        selected = c('14')
         )#end f7CheckboxGroup
       )#end tagList
     ),#end f7Card
@@ -72,8 +75,10 @@ mod_plots_server <- function(id,data){
     output$plot <- renderPlot({
 
         LOCAL$bpd %>%
-          tidyr::pivot_longer(2:6,names_to = 'Metric', values_to = 'Value', values_drop_na = TRUE) %>%
+          tidyr::pivot_longer(3:7,names_to = 'Metric', values_to = 'Value', values_drop_na = TRUE) %>%
           dplyr::filter(DATE >= (Sys.Date() - as.numeric(input$dtRange)), Metric %in% input$cbParams) %>%
+          dplyr::group_by(USER_ID,DATE,Metric) %>%
+          dplyr::summarize(Value = mean(Value)) %>%
           ggplot(.,aes(DATE,Value,color = Metric)) +
           geom_line(size = 2) +
           geom_point(size = 8) +

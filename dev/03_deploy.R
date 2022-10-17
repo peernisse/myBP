@@ -39,7 +39,7 @@ golem::add_shinyappsio_file()
 #golem::add_dockerfile_with_renv_shinyproxy()
 
 #Enable PWA
-charpente::set_pwa('C:/R_Projects/myBP')
+charpente::set_pwa('C:/R_Projects/myBP') #remember to update the manifest file to include the start URL as the shinyapps.io location
 
 #Deploy to shinyapps.io
 rsconnect::deployApp()

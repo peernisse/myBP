@@ -4,34 +4,32 @@
 #'
 #' @param id,input,output,session Internal parameters for {shiny}.
 #'
-
-#'
 #' @importFrom shiny NS tagList observeEvent
 #' @importFrom magrittr %>%
 #' @importFrom dplyr bind_rows
-#'
-#'
+#' @importFrom RSQLite dbConnect dbListTables dbGetQuery dbDisconnect
+#' @importFrom DBI dbGetQuery dbExecute dbDisconnect
 #'
 #' @noRd
 mod_dataEntry_ui <- function(id){
   ns <- NS(id)
+
   tagList(
-
-    shinyMobile::f7Card(id = ns('cdEntry'), title = 'Data Entry',
-
-                      shinyMobile::f7DatePicker(ns('date'),label = 'Date'),
-                      shinyMobile::f7Select(ns('sys'), label = 'Systolic', choices = seq(1:300), selected = 100),
-                      shinyMobile::f7Select(ns('dias'), label = 'Diastolic', choices = seq(1:300), selected = 70),
-                      shinyMobile::f7Select(ns('wt'), label = 'Weight (lbs)', choices = seq(1:300), selected = 170),
-                      shinyMobile::f7Select(ns('ex'), label = 'Exercise (minutes)', choices = seq(1:300), selected = 0),
-                      shinyMobile::f7Select(ns('meds'), label = 'Lisinopril (mg)', choices = c(0,5,10,20), selected = 0),
-                      footer = tagList(
-                        shinyMobile::f7Button(ns("commit"), label = 'Save')
-                      )#end footer
-
+    shinyMobile::f7Card(
+      id = ns('cdEntry'),
+      title = 'Data Entry',
+      shinyMobile::f7DatePicker(ns('date'),label = 'Date'),
+      shinyMobile::f7Select(ns('sys'), label = 'Systolic', choices = c('--Enter Systolic--',seq(0,300)), selected = '--Enter Systolic--'),
+      shinyMobile::f7Select(ns('dias'), label = 'Diastolic', choices = c('--Enter Diastolic--',seq(0,200)), selected = '--Enter Diastolic--'),
+      shinyMobile::f7Select(ns('wt'), label = 'Weight (lbs)', choices = c('--Enter Weight--',seq(50,300)), selected = '--Enter Weight--'),
+      shinyMobile::f7Select(ns('ex'), label = 'Exercise (minutes)', choices = c('--Enter Exercise--',seq(0,300, by = 5)), selected = '--Enter Exercise--'),
+      shinyMobile::f7Select(ns('meds'), label = 'BP Med (mg)', choices = c('--Enter BP Med--','0','5','10','15','20','25','30'), selected = '--BP Med--'),
+      footer = tagList(
+        shinyMobile::f7Button(ns("commit"), label = 'Save')
+      )#end footer
     )#end card
   )#end tagList
-}
+}#end mod_dataEntry_ui
 
 #' dataEntry Server Functions
 #'
@@ -41,51 +39,56 @@ mod_dataEntry_ui <- function(id){
 mod_dataEntry_server <- function(id){
   moduleServer( id, function(input, output, session){
     ns <- session$ns
-    #####SETUP DATA#####
-    #Read current dataset in
-    #bpd <- readRDS('./data/bpd.RDS')
 
     #Instantiate reactive dataframe to add to
     LOCAL <- reactiveValues(
-      bpd = readRDS('./inst/app/file_bpd.Rds'),#Load existing data to reactive
-      newRecord = data.frame('DATE' = NA, 'SYS' = '', 'DIAS' = '', 'WT' = '',
-                             'EXERCISE' = '', 'MEDS' = '', stringsAsFactors = FALSE)
+      bpd = getData(session)[[1]] %>% mutate(., DATE = as.Date(DATE, origin = '1970/1/1'))#,
+      #bpd = readRDS('./inst/app/file_bpd.Rds'),#Load existing data to reactive
+      #newRecord = data.frame('DATE' = NA, 'SYS' = '', 'DIAS' = '', 'WT' = '',
+         #                    'EXERCISE' = '', 'MEDS' = '', stringsAsFactors = FALSE)
     )
 
     #####OBSERVERS#####
     shiny::observeEvent(input$commit, {
 
-      LOCAL$newRecord$DATE <- input$date
-      LOCAL$newRecord$SYS <- as.numeric(input$sys)
-      LOCAL$newRecord$DIAS <- as.numeric(input$dias)
-      LOCAL$newRecord$WT <- as.numeric(input$wt)
-      LOCAL$newRecord$EXERCISE <- as.numeric(input$ex)
-      LOCAL$newRecord$MEDS <- as.numeric(input$meds)
+      #Write new record to database
+      devUser <- 'peernisse'#This should change when user auth is set up
 
-      LOCAL$bpd <- dplyr::bind_rows(LOCAL$bpd, LOCAL$newRecord)
+      qry <- paste0("INSERT INTO bpd (USER_ID, DATE, SYS,DIAS,WT,EXERCISE,MEDS) VALUES ('",
+                    devUser, "',",
+                    as.numeric(input$date), ",",
+                    ifelse(is.na(as.numeric(input$sys)),'NULL',as.numeric(input$sys)), ",",
+                    ifelse(is.na(as.numeric(input$dias)),'NULL',as.numeric(input$dias)), ",",
+                    ifelse(is.na(as.numeric(input$wt)),'NULL',as.numeric(input$wt)), ",",
+                    ifelse(is.na(as.numeric(input$ex)),'NULL',as.numeric(input$ex)), ",",
+                    ifelse(is.na(as.numeric(input$meds)),'NULL',as.numeric(input$meds)),
+                    ");"
+                    )#end paste0
 
-      LOCAL$newRecord <- LOCAL$newRecord[0,]
+      #Write record to DB
+      conn <- DBI::dbConnect(RSQLite::SQLite(), "./inst/app/bp-db.sqlite")
+      #dbGetQuery(conn, qry)#end dbGetQuery send insert statement
+      DBI::dbExecute(conn, qry)#end dbGetQuery send insert statement
+      LOCAL$bpd <- getData(session)[[1]] %>% mutate(., DATE = as.Date(DATE, origin = '1970/1/1'))#Update the LOCAL$dbd from the db
+      DBI::dbDisconnect(conn)
 
-      file.remove('./inst/app/file_bpd.RDS')
+      #LOCAL$bpd %>% as.data.frame(.) %>% saveRDS(.,file = './inst/app/file_bpd.Rds', version =2)
 
-      LOCAL$bpd %>% as.data.frame(.) %>% saveRDS(.,file = './inst/app/file_bpd.Rds', version =2)
+      #Reset picker input values
+      shinyMobile::updateF7DatePicker(inputId = 'date', value = Sys.Date())
+      shinyMobile::updateF7Select('sys', selected = '--Enter Systolic--')
+      shinyMobile::updateF7Select('dias', selected = '--Enter Diastolic--')
+      shinyMobile::updateF7Select('wt', selected = '--Enter Weight--')
+      shinyMobile::updateF7Select('ex', selected = '--Enter Exercise--')
+      shinyMobile::updateF7Select('meds', selected = '--Enter BP Med--')
 
 
     })#end observeEvent
 
-    #####OUTPUTS#####
-
     #####SERVER MODULE EXPORT#####
     return(LOCAL)
 
-
   })#end moduleServer
 }#end mod_dataEntry_server
-
-## To be copied in the UI
-# mod_dataEntry_ui("dataEntry_1")
-
-## To be copied in the server
-# mod_dataEntry_server("dataEntry_1")
 
 
