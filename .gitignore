@@ -5,3 +5,5 @@
 .DS_Store
 /dev/
 /rsconnect/
+.sqlite
+/inst/app/www/.token/

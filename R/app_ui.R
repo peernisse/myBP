@@ -12,14 +12,9 @@ app_ui <- function(request) {
     f7Page(allowPWA = TRUE,
       f7SingleLayout(navbar = f7Navbar(title = 'Blood Pressure Data'),
 
-
-                     mod_dataEntry_ui("dataEntry"),
-                     mod_plots_ui('plots')
-
-
-
-
-
+                    auth0::logoutButton(),
+                    mod_dataEntry_ui("dataEntry"),
+                    mod_plots_ui('plots')
       )#end f7singleLayout
     )#end f7Page
   )

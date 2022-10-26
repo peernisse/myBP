@@ -44,3 +44,28 @@ getData <- function(session){
 
 }#end getData
 
+
+
+#' getDataGS
+#'
+#' @description Retrieves data tables from SQLite file
+#'
+#' @return list of dataframes
+#'
+#'
+#' @noRd
+getDataGS <- function(session){
+
+    ns <- session$ns
+    #Database connection
+    googlesheets4::gs4_auth(path = './inst/app/www/.token/rivermenu-96e6b5c5652d.json')
+    #conn <- googlesheets4::gs4_get('https://docs.google.com/spreadsheets/d/1vc3shTj6WqyrPTIbwNYOlijL50ih5Vk-5KjTfS_pVPY/edit#gid=449286518')
+    data <- googlesheets4::read_sheet('https://docs.google.com/spreadsheets/d/1vc3shTj6WqyrPTIbwNYOlijL50ih5Vk-5KjTfS_pVPY/edit#gid=449286518') %>%
+        mutate(DATE = as.Date(DATE)) %>%
+        filter(USER_ID %in% session$userData$auth0_info$name)
+
+
+    return(data)
+
+}#end getData
+

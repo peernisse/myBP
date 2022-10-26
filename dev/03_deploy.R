@@ -18,6 +18,10 @@
 devtools::check()
 #rhub::check_for_cran()
 
+## Auth0 project environment variables
+usethis::edit_r_environ('project')
+
+
 # Deploy
 
 ## Local, CRAN or Package Manager ----

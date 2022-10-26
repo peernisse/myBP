@@ -75,12 +75,14 @@ mod_plots_server <- function(id,data){
     output$plot <- renderPlot({
 
         LOCAL$bpd %>%
+          dplyr::select(-7) %>%
           tidyr::pivot_longer(3:7,names_to = 'Metric', values_to = 'Value', values_drop_na = TRUE) %>%
           dplyr::filter(DATE >= (Sys.Date() - as.numeric(input$dtRange)), Metric %in% input$cbParams) %>%
           dplyr::group_by(USER_ID,DATE,Metric) %>%
-          dplyr::summarize(Value = mean(Value)) %>%
-          ggplot(.,aes(DATE,Value,color = Metric)) +
+          dplyr::summarize(dispValue = mean(Value),min = min(Value),max = max(Value)) %>%
+          ggplot(.,aes(DATE,dispValue,color = Metric,ymin = min, ymax = max)) +
           geom_line(size = 2) +
+          geom_linerange(size = 1) +
           geom_point(size = 8) +
           theme(
             legend.position = 'bottom',

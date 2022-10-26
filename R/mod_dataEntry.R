@@ -1,6 +1,6 @@
 #' dataEntry UI Function
 #'
-#' @description A shiny Module.
+#' @description Entry form and data connection to add records.
 #'
 #' @param id,input,output,session Internal parameters for {shiny}.
 #'
@@ -9,6 +9,7 @@
 #' @importFrom dplyr bind_rows
 #' @importFrom RSQLite dbConnect dbListTables dbGetQuery dbDisconnect
 #' @importFrom DBI dbGetQuery dbExecute dbDisconnect
+#' @importFrom googlesheets4 gs4_auth gs4_get read_sheet sheet_append
 #'
 #' @noRd
 mod_dataEntry_ui <- function(id){
@@ -42,40 +43,65 @@ mod_dataEntry_server <- function(id){
 
     #Instantiate reactive dataframe to add to
     LOCAL <- reactiveValues(
-      bpd = getData(session)[[1]] %>% mutate(., DATE = as.Date(DATE, origin = '1970/1/1'))#,
+      curUser = session$userData$auth0_info$name,
+      #bpd = getData(session)[[1]] %>% mutate(., DATE = as.Date(DATE, origin = '1970/1/1'))#,
+      bpd = getDataGS(session),
       #bpd = readRDS('./inst/app/file_bpd.Rds'),#Load existing data to reactive
-      #newRecord = data.frame('DATE' = NA, 'SYS' = '', 'DIAS' = '', 'WT' = '',
-         #                    'EXERCISE' = '', 'MEDS' = '', stringsAsFactors = FALSE)
+      newRecord = data.frame('USER_ID' = '', 'DATE' = NA, 'SYS' = '', 'DIAS' = '', 'WT' = '',
+                             'EXERCISE' = '','DRINKS' = '',  'MEDS' = '', stringsAsFactors = FALSE)
     )
 
     #####OBSERVERS#####
     shiny::observeEvent(input$commit, {
 
+      #####Google sheets backend#####
+
+      #Set newrecord values from inputs
+      LOCAL$newRecord$USER_ID = LOCAL$curUser
+      LOCAL$newRecord$DATE = input$date
+      LOCAL$newRecord$SYS = input$sys %>% as.numeric()
+      LOCAL$newRecord$DIAS = input$dias %>% as.numeric()
+      LOCAL$newRecord$WT = input$wt %>% as.numeric()
+      LOCAL$newRecord$EXERCISE = input$ex %>% as.numeric()
+      LOCAL$newRecord$DRINKS = NA_real_
+      LOCAL$newRecord$MEDS = input$meds %>% as.numeric()
+
+      #Write record to GS
+      googlesheets4::sheet_append('https://docs.google.com/spreadsheets/d/1vc3shTj6WqyrPTIbwNYOlijL50ih5Vk-5KjTfS_pVPY/edit#gid=449286518', LOCAL$newRecord, 1)
+
+      #Clear new record
+      LOCAL$newRecord <- data.frame('USER_ID' = '', 'DATE' = NA, 'SYS' = '', 'DIAS' = '', 'WT' = '',
+                                    'EXERCISE' = '','DRINKS' = '',  'MEDS' = '', stringsAsFactors = FALSE)
+
+      #Refresh data
+      LOCAL$bpd <- getDataGS(session)
+
+      #####DB BACKEND#####
       #Write new record to database
-      devUser <- 'peernisse'#This should change when user auth is set up
-
-      qry <- paste0("INSERT INTO bpd (USER_ID, DATE, SYS,DIAS,WT,EXERCISE,MEDS) VALUES ('",
-                    devUser, "',",
-                    as.numeric(input$date), ",",
-                    ifelse(is.na(as.numeric(input$sys)),'NULL',as.numeric(input$sys)), ",",
-                    ifelse(is.na(as.numeric(input$dias)),'NULL',as.numeric(input$dias)), ",",
-                    ifelse(is.na(as.numeric(input$wt)),'NULL',as.numeric(input$wt)), ",",
-                    ifelse(is.na(as.numeric(input$ex)),'NULL',as.numeric(input$ex)), ",",
-                    ifelse(is.na(as.numeric(input$meds)),'NULL',as.numeric(input$meds)),
-                    ");"
-                    )#end paste0
-
-      #Write record to DB
-      conn <- DBI::dbConnect(RSQLite::SQLite(), "./inst/app/bp-db.sqlite")
-      #dbGetQuery(conn, qry)#end dbGetQuery send insert statement
-      DBI::dbExecute(conn, qry)#end dbGetQuery send insert statement
-      LOCAL$bpd <- getData(session)[[1]] %>% mutate(., DATE = as.Date(DATE, origin = '1970/1/1'))#Update the LOCAL$dbd from the db
-      DBI::dbDisconnect(conn)
+      # devUser <- 'peernisse'#This should change when user auth is set up
+      #
+      # qry <- paste0("INSERT INTO bpd (USER_ID, DATE, SYS,DIAS,WT,EXERCISE,MEDS) VALUES ('",
+      #               devUser, "',",
+      #               as.numeric(input$date), ",",
+      #               ifelse(is.na(as.numeric(input$sys)),'NULL',as.numeric(input$sys)), ",",
+      #               ifelse(is.na(as.numeric(input$dias)),'NULL',as.numeric(input$dias)), ",",
+      #               ifelse(is.na(as.numeric(input$wt)),'NULL',as.numeric(input$wt)), ",",
+      #               ifelse(is.na(as.numeric(input$ex)),'NULL',as.numeric(input$ex)), ",",
+      #               ifelse(is.na(as.numeric(input$meds)),'NULL',as.numeric(input$meds)),
+      #               ");"
+      #               )#end paste0
+      #
+      # #Write record to DB
+      # conn <- DBI::dbConnect(RSQLite::SQLite(), "./inst/app/bp-db.sqlite")
+      # #dbGetQuery(conn, qry)#end dbGetQuery send insert statement
+      # DBI::dbExecute(conn, qry)#end dbGetQuery send insert statement
+      # LOCAL$bpd <- getData(session)[[1]] %>% mutate(., DATE = as.Date(DATE, origin = '1970/1/1'))#Update the LOCAL$dbd from the db
+      # DBI::dbDisconnect(conn)
 
       #LOCAL$bpd %>% as.data.frame(.) %>% saveRDS(.,file = './inst/app/file_bpd.Rds', version =2)
 
       #Reset picker input values
-      shinyMobile::updateF7DatePicker(inputId = 'date', value = Sys.Date())
+      shinyMobile::updateF7DatePicker(inputId = 'date', value = NULL)
       shinyMobile::updateF7Select('sys', selected = '--Enter Systolic--')
       shinyMobile::updateF7Select('dias', selected = '--Enter Diastolic--')
       shinyMobile::updateF7Select('wt', selected = '--Enter Weight--')

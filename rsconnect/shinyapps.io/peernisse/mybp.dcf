@@ -5,7 +5,7 @@ account: peernisse
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 7323842
-bundleId: 6409329
+bundleId: 6421190
 url: https://peernisse.shinyapps.io/mybp/
-when: 1665967702.028
-lastSyncTime: 1665967702.028
+when: 1666228613.65931
+lastSyncTime: 1666228613.65931
