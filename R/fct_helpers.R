@@ -55,7 +55,7 @@ getData <- function(session){
 #'
 #' @noRd
 getDataGS <- function(session){
-
+#browser()
     ns <- session$ns
     #Database connection
     googlesheets4::gs4_auth(path = './inst/app/www/.token/rivermenu-96e6b5c5652d.json')

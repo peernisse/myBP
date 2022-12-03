@@ -1,7 +1,7 @@
 {
-  "name": "My Blood Pressure App",
-  "short_name": "My BP",
-  "description": "Record and view BP measurements",
+  "name": "My Progressive Web App",
+  "short_name": "My App",
+  "description": "What it does!",
   "lang": "en-US",
   "start_url": "https://peernisse.shinyapps.io/mybp/",
   "display": "standalone",

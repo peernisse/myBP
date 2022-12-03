@@ -1,6 +1,6 @@
 #' plots UI Function
 #'
-#' @description A shiny Module.
+#' @description Plot time series and filter tools.
 #'
 #' @param id,input,output,session Internal parameters for {shiny}.
 #'
@@ -23,14 +23,16 @@ mod_plots_ui <- function(id){
       footer = tagList(
         f7CheckboxGroup(ns('cbParams'),
                         label = 'Metrics',
-                        choices = c('SYS','DIAS','WT','EXERCISE','MEDS'),
-                        selected = 'SYS'
+                        choices = c('Blood Pressure Systolic','Blood Pressure Diastolic',
+                                    'Weight','Exercise Minutes','Medication Milligrams'),
+                        #choices = c('SYS','DIAS','WT','EXERCISE','MEDS'),
+                        selected = 'Blood Pressure Systolic'
         ),#end f7CheckboxGroup
 
         f7Select(ns('dtRange'),
                         label = 'Days Back',
                         choices = c('7','14','21','30', '60','90', '180', '365', '730', '1000', '2000'),
-                        selected = c('14')
+                        selected = c('365')
         )#end f7CheckboxGroup
       )#end tagList
     ),#end f7Card
@@ -74,26 +76,21 @@ mod_plots_server <- function(id,data){
 
     output$plot <- renderPlot({
 
-        LOCAL$bpd %>%
-          dplyr::select(-7) %>%
-          tidyr::pivot_longer(3:7,names_to = 'Metric', values_to = 'Value', values_drop_na = TRUE) %>%
-          dplyr::filter(DATE >= (Sys.Date() - as.numeric(input$dtRange)), Metric %in% input$cbParams) %>%
-          dplyr::group_by(USER_ID,DATE,Metric) %>%
-          dplyr::summarize(dispValue = mean(Value),min = min(Value),max = max(Value)) %>%
-          ggplot(.,aes(DATE,dispValue,color = Metric,ymin = min, ymax = max)) +
-          geom_line(size = 2) +
-          geom_linerange(size = 1) +
-          geom_point(size = 8) +
-          theme(
-            legend.position = 'bottom',
-            legend.title = element_blank()
-          )
-
-
+      LOCAL$bpd %>%
+        dplyr::select(-7) %>%
+        tidyr::pivot_longer(3:7,names_to = 'Metric', values_to = 'Value', values_drop_na = TRUE) %>%
+        dplyr::filter(DATE >= (Sys.Date() - as.numeric(input$dtRange)), Metric %in% input$cbParams) %>%
+        dplyr::group_by(USER_ID,DATE,Metric) %>%
+        dplyr::summarize(dispValue = mean(Value),min = min(Value),max = max(Value)) %>%
+        ggplot(.,aes(DATE,dispValue,color = Metric,ymin = min, ymax = max)) +
+        geom_line(size = 2) +
+        geom_linerange(size = 1) +
+        geom_point(size = 8) +
+        theme(
+          legend.position = 'bottom',
+          legend.title = element_blank()
+        )
     })#end renderPlot
-
-
-
   })#end moduleServer
 }#end mod_plots_server
 

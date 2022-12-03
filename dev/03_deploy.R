@@ -19,7 +19,7 @@ devtools::check()
 #rhub::check_for_cran()
 
 ## Auth0 project environment variables
-usethis::edit_r_environ('project')
+#usethis::edit_r_environ('project')
 
 
 # Deploy
@@ -32,7 +32,9 @@ devtools::build()
 ## RStudio ----
 ## If you want to deploy on RStudio related platforms
 #golem::add_rstudioconnect_file()
-golem::add_shinyappsio_file()
+
+golem::add_shinyappsio_file()#Do once, unless changes
+
 #golem::add_shinyserver_file()
 
 ## Docker ----
@@ -43,7 +45,8 @@ golem::add_shinyappsio_file()
 #golem::add_dockerfile_with_renv_shinyproxy()
 
 #Enable PWA
-charpente::set_pwa('C:/R_Projects/myBP') #remember to update the manifest file to include the start URL as the shinyapps.io location
+charpente::set_pwa('C:/R_Projects/myBP') #Every time you run this,
+#remember to update the `www/manifest.webmanifest` file to include the start URL as the shinyapps.io location
 
 #Deploy to shinyapps.io
 rsconnect::deployApp()
